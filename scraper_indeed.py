@@ -31,6 +31,12 @@ indeed_python = 'https://www.indeed.com/jobs?q=software%20developer%20%24110%2C0
 indeed_react = 'https://www.indeed.com/jobs?q=software%20developer%20%24110%2C000&l=remote&sc=0kf%3Aattr(84K74)attr(DSQF7)explvl(MID_LEVEL)%3B&rbl=Remote&jlid=aaa2b906602aa8f5&fromage=1&vjk=67b654b9b4a3b396'
 indeed_remote_js = 'https://www.indeed.com/jobs?q=software%20developer%20%24110%2C000&l=remote&sc=0kf%3Aattr(DSQF7)attr(JB2WC)explvl(MID_LEVEL)%3B&rbl=Remote&jlid=aaa2b906602aa8f5&fromage=1&vjk=67b654b9b4a3b396'
 
+job_types = {}
+job_types['python'] = 'X62BT'
+job_types['javascript'] = 'JB2WC'
+job_types['spring'] = 'XH9RQ'
+job_types['java'] = 'EVPJU'
+job_types['react'] = '84K74'
 # Make this more generic in the future
 
 
@@ -52,8 +58,10 @@ class IndeedJobCard():
         return str(self.__dict__)
 
 
-def getIndeedJobsSinceYesterday():
-    page = requests.get(indeed_spring)
+def getIndeedJobsSinceYesterday(type):
+    job_type = job_types[type]
+    indeed_remote_mid_110 = f'https://www.indeed.com/jobs?q=software%20developer%20%24110%2C000&l=remote&sc=0kf%3Aattr({job_type})attr(DSQF7)explvl(MID_LEVEL)%3B&rbl=Remote&jlid=aaa2b906602aa8f5&fromage=1&vjk=91b9d6cce9535067'
+    page = requests.get(indeed_remote_mid_110)
 
     soup = BeautifulSoup(page.content, "html.parser")
     # results = soup.find(id="mosaic-provider-jobcards")
@@ -107,13 +115,19 @@ def connectToCosmos():
 
 def main():
     # Get jobs from Indeed
-    jobs = getIndeedJobsSinceYesterday()
+    job_type_arr = ['python', 'javascript', 'spring', 'java', 'react']
+    jobs = []
+    for job_type in job_type_arr:
+        jobs += getIndeedJobsSinceYesterday(job_type)
     # Connect to cosmos db and return client, database, container
     client, database, container = connectToCosmos()
     # Loop through retrieved jobs and insert into cosmos
     for job in jobs:
         container.create_item(body=job.__dict__)
         print("Inserted job: " + job.title)
+        # TODO - insert-if-not-exists
+        # create cosmos client in your code and use ExecuteProcedure to send docs from azure function to cosmos procedure
+        # add stored procedure to your cosmos collection that handles conflicts. You can find bulkUpsert_v_2 from Microsoft and modify it so when conflict 409 occurs, nothing will be written to cosmos.
 
 
 if __name__ == "__main__":
